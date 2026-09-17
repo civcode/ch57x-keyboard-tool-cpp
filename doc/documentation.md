@@ -261,11 +261,6 @@ the board returns all 72. It is kept because the partial case is worth testing a
   raw hardware records carrying the `0xfa` read opcode, capture round-trip, LED codes,
   orientation/render, and the first-key-only limited-layout rule.
 - `show-keys`, `validate`, `dump`, `decode` need no device and no root.
-- **Retracted:** an earlier revision of these docs claimed `read` lost the tail of the map
-  because the firmware stopped answering `0xFA` mid-stream. That came from the single
-  truncated capture above, not from the device — a live `read` returns all 72 records. The
-  defensive handling stays (bounded `deadlineMs`, records kept when a send fails, a
-  truncation note instead of a silent short map).
 
 ## Vendor tool reverse engineering
 
