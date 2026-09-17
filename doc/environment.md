@@ -10,7 +10,7 @@ reproducible. Nothing here is required to *build* the tool; only g++, CMake and 
 | Board / BIOS | ASUS PRIME X870-P WIFI (ASUSTeK), BIOS 0831 |
 | CPU | AMD Ryzen 9 9950X, 16 cores / 32 threads |
 | RAM | 64 GiB (60.4 GiB visible) |
-| GPU | **ASUS GeForce RTX 4070 Ti SUPER** — NVIDIA AD103, 16 GiB GDDR6X (256-bit, 672 GB/s), NVIDIA kernel module 580.173.02 |
+| GPU | ASUS GeForce RTX 4070 Ti SUPER — NVIDIA AD103, 16 GiB GDDR6X (256-bit, 672 GB/s), NVIDIA kernel module 580.173.02 |
 | iGPU | AMD/ATI `13c0` (Ryzen 9 9950X), `amdgpu`, drives the monitors (`card1`); the RTX 4070 Ti SUPER is headless (`card2`) |
 | OS | Ubuntu 24.04.5 LTS (Noble Numbat), kernel `7.0.0-31-generic`, x86_64 |
 
@@ -46,7 +46,7 @@ on demand (requires mmap)"`; `src/llama-model-loader.h` — *"use case: keep PLE
 embd tensors on disk, read them on demand"*; exposed as `-lzm, --lazy-mode`.
 
 ```
-# llama.cpp @ ~/workspace/llama.cpp (4a8993735); MTP/spec work in ~/workspace/llama.cpp-qwen38-mtp (d1a92352c)
+# llama.cpp
 ./llama-server \
   -m  ~/models/Qwen3.8-Flash-Next/UD-Q3_K_XL/Qwen3.8-Flash-Next-UD-Q3_K_XL-00001-of-00003.gguf \
   -md ~/models/Qwen3.8-Flash-Next/MTP/mtp-Qwen3.8-Flash-Next-shared-Q8_0.gguf \
@@ -106,8 +106,6 @@ parser, encoder, `validate`, `dump`, `decode`, selftests — runs anywhere, no d
 | Pi | 0.85.1 (`@earendil-works/pi-coding-agent`) |
 | Provider | `local-llama` — OpenAI-compatible endpoint `http://127.0.0.1:8080/v1`, served by [llama.cpp on this host](#inference-server-llamacpp) |
 | Model | `qwen3.8-flash-next-q3_k_xl-128k`, 128k context, thinking level `medium` |
-| Alternates configured | Qwen3-Coder-30B (32k/128k), Qwen3.8-27B quants (32k–256k), Granite-4.2-8B, Gemma-4-26B |
-| Sessions | JSONL transcripts under `~/.pi/agent/sessions/--home-chris-tmp-wired-mini-keyboard--/` |
 
 No cloud model was used for implementation. Local-only by configuration:
 `defaultProvider: local-llama` in `~/.pi/agent/settings.json`.
