@@ -1,8 +1,7 @@
 # Development environment
 
 The machine, toolchain and agent setup this port was built on, so the work is
-reproducible. Nothing here is required to *build* the tool — see
-[README → Quick start](../README.md#quick-start); only g++, CMake and libusb-1.0 are.
+reproducible. Nothing here is required to *build* the tool; only g++, CMake and libusb-1.0 are.
 
 ## Host
 
@@ -11,14 +10,15 @@ reproducible. Nothing here is required to *build* the tool — see
 | Board / BIOS | ASUS PRIME X870-P WIFI (ASUSTeK), BIOS 0831 |
 | CPU | AMD Ryzen 9 9950X, 16 cores / 32 threads |
 | RAM | 64 GiB (60.4 GiB visible) |
-| GPU | **ASUS GeForce RTX 4070 Ti SUPER** — NVIDIA AD103, PCI `01:00.0`, 16 GiB GDDR6X (256-bit, 672 GB/s), NVIDIA kernel module 580.173.02 — does the local model inference |
+| GPU | **ASUS GeForce RTX 4070 Ti SUPER** — NVIDIA AD103, 16 GiB GDDR6X (256-bit, 672 GB/s), NVIDIA kernel module 580.173.02 |
 | iGPU | AMD/ATI `13c0` (Ryzen 9 9950X), `amdgpu`, drives the monitors (`card1`); the RTX 4070 Ti SUPER is headless (`card2`) |
 | OS | Ubuntu 24.04.5 LTS (Noble Numbat), kernel `7.0.0-31-generic`, x86_64 |
-| Shell / session | bash under tmux; work tree `/home/chris/tmp/wired-mini-keyboard` (also `$HOME`) |
 
-The GPU is in the inference path only — building and testing the tool is pure CPU work
-(`nproc`-scale g++ + a handful of libusb transfers). The quant sizes and context lengths
-configured for the agent are chosen to fit the 16 GiB of VRAM.
+The GPU is used for model inference only — nothing in this repo needs a GPU, building
+and testing is pure CPU work (`nproc`-scale g++ plus a handful of libusb transfers).
+Inference itself is *not* GPU-resident either: the served model is far bigger than the
+16 GiB of VRAM, so llama.cpp tiers it across VRAM, RAM and NVMe
+([below](#inference-server-llamacpp)).
 
 Memory spec per [NVIDIA's RTX 4070 family datasheet](https://www.nvidia.com/en-us/geforce/graphics-cards/40-series/rtx-4070-family/);
 the PCI identity, driver binding and NVRM version were read from `lspci`,
@@ -26,6 +26,51 @@ the PCI identity, driver binding and NVRM version were read from `lspci`,
 `nvidia-smi` reports "couldn't communicate with the NVIDIA driver" from inside the
 sandboxed agent shell — the `/dev/nvidia*` nodes are not exposed there, which is a
 sandbox artefact, not a missing or unloaded driver.
+
+## Inference server (llama.cpp)
+
+The `local-llama` endpoint is a local `llama-server`. Model: **Qwen3.8-Flash-Next**,
+`UD-Q3_K_XL`, a 3-shard GGUF — **~84 GB on NVMe**, i.e. about 5× the 16 GiB of VRAM and
+larger than the 64 GiB of RAM (files are symlinks into the Hugging Face cache, downloaded
+as `unsloth/Qwen3.8-Flash-Next-GGUF`). So it runs *tiered*, not resident:
+
+| Tier | Mechanism | What lives there |
+|---|---|---|
+| VRAM, 16 GiB | auto-fit is on by default (`fit_params = true`); `--fit-target 3884` holds back a ~3.8 GiB per-device margin for KV + draft | hot weights, 128k KV cache, MTP draft head |
+| System RAM, 64 GiB | pages pulled in through the mapping as they are touched | the weights actually used |
+| NVMe | `--load-mode mmap` + `--lazy-mode on` | the PLE / "engram" **n-gram embedding tables**, read row-wise on demand |
+
+The lazy tier is a llama.cpp fork feature, not a stock GGUF trick:
+`include/llama.h` — `LLAMA_LAZY_MODE_ON = 2, "read the rows of tensors marked by the arch
+on demand (requires mmap)"`; `src/llama-model-loader.h` — *"use case: keep PLE / engrams
+embd tensors on disk, read them on demand"*; exposed as `-lzm, --lazy-mode`.
+
+```
+# llama.cpp @ ~/workspace/llama.cpp (4a8993735); MTP/spec work in ~/workspace/llama.cpp-qwen38-mtp (d1a92352c)
+./llama-server \
+  -m  ~/models/Qwen3.8-Flash-Next/UD-Q3_K_XL/Qwen3.8-Flash-Next-UD-Q3_K_XL-00001-of-00003.gguf \
+  -md ~/models/Qwen3.8-Flash-Next/MTP/mtp-Qwen3.8-Flash-Next-shared-Q8_0.gguf \
+  --alias qwen3.8-flash-next-q3_k_xl-128k \
+  --host 127.0.0.1 --port 8080 \
+  --spec-type draft-mtp --spec-draft-n-max 3 \
+  --fit-target 3884 --load-mode mmap --lazy-mode on --flash-attn on \
+  --parallel 1 --no-kv-unified --ctx-size 131072 \
+  --temp 1.0 --top-p 0.95 --top-k 20 --min-p 0.0 \
+  --jinja --reasoning-format auto --reasoning auto --reasoning-budget -1 \
+  --n-predict 16384
+```
+
+Notes that matter for reproducing the agent setup:
+
+- `--alias` is exactly the `model` id in pi's `models.json` (`qwen3.8-flash-next-q3_k_xl-128k`);
+  `--n-predict 16384` matches that entry's `maxTokens`, `--ctx-size 131072` its context window.
+- `--load-mode mmap` means untouched shards never enter RAM at all — the 84 GB stays on disk.
+- `-md` + `--spec-type draft-mtp` = multi-token-prediction draft head (Q8_0) for speculative
+  decoding, up to 3 draft tokens/step — this is what keeps throughput usable with weights
+  streaming off NVMe.
+- Single slot (`--parallel 1`, `--no-kv-unified`): one agent session, 128k of KV.
+- The endpoint binds to `127.0.0.1:8080`; commands run inside the pi sandbox see only the
+  sandbox proxies, so `curl` from a sandboxed shell cannot reach it — the agent process can.
 
 ## Build toolchain
 
@@ -57,7 +102,7 @@ parser, encoder, `validate`, `dump`, `decode`, selftests — runs anywhere, no d
 | | |
 |---|---|
 | Pi | 0.85.1 (`@earendil-works/pi-coding-agent`) |
-| Provider | `local-llama` — OpenAI-compatible endpoint `http://127.0.0.1:8080/v1`, served from the RTX 4070 Ti SUPER on this host (the agent's shell reaches only the sandbox proxies, so `curl` from a sandboxed command cannot hit `:8080` directly) |
+| Provider | `local-llama` — OpenAI-compatible endpoint `http://127.0.0.1:8080/v1`, served by [llama.cpp on this host](#inference-server-llamacpp) |
 | Model | `qwen3.8-flash-next-q3_k_xl-128k`, 128k context, thinking level `medium` |
 | Alternates configured | Qwen3-Coder-30B (32k/128k), Qwen3.8-27B quants (32k–256k), Granite-4.2-8B, Gemma-4-26B |
 | Sessions | JSONL transcripts under `~/.pi/agent/sessions/--home-chris-tmp-wired-mini-keyboard--/` |
