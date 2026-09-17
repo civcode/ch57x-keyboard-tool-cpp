@@ -1,0 +1,35 @@
+# CH57x mini keyboard (USB 514c:8851) — one row of 3 keys.
+#
+#   ch57x-keyboard-tool validate config.yaml   # check the file (no device needed)
+#   ch57x-keyboard-tool upload config.yaml     # write it to the keyboard
+#   ch57x-keyboard-tool show-keys              # list every key name / HID code
+#
+# `model` is optional: 514c:8851 auto-detects to ch57x-1.
+model: ch57x-1
+# Normal = the row is read left -> right.
+# If the uploaded mapping comes out reversed, switch to: upsidedown
+orientation: normal
+rows: 1
+columns: 3               # 1 x 3 = 3 buttons
+knobs: 0                 # set to 1 if your unit also has a dial (see bottom)
+
+layers:
+  - buttons:
+      #  [left key,        middle key,      right key]
+      - [previous,           play,          next]      # transport controls
+    knobs: []
+
+# ---------------------------------------------------------------------------
+# If your unit ALSO has a dial/knob (very common on these 3-key pads):
+#   1) change `knobs: 1` above
+#   2) replace `knobs: []` with:
+#
+#   knobs:
+#     - ccw:   volumedown     # rotate counter-clockwise
+#       press: mute           # push the dial down
+#       cw:    volumeup       # rotate clockwise
+#
+# NOTE: a 1-row layout with exactly 1 knob is a "limited" layout in the driver:
+#   within a key *sequence*, modifiers are only allowed on the FIRST key.
+#   `ctrl-a` is fine, but `a,ctrl-b` is rejected (validator will tell you).
+# ---------------------------------------------------------------------------

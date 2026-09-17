@@ -1,0 +1,38 @@
+# This workspace root is also $HOME: keep the shell/tooling files out of the repo.
+# AGENTS.md = local agent instructions, intentionally not versioned.
+AGENTS.md
+.bash_profile
+.bashrc
+.zprofile
+.zshrc
+.env
+.gitconfig
+.mcp.json
+.profile
+.ripgreprc
+.cache/
+.config/
+.local/
+.npm/
+.pi/
+.ssh/
+
+# Build output
+build/
+*.o
+*.a
+
+# Vendor software (proprietary, ~102 MB). Not committed -- vendor/README.md records the
+# download URL + checksums; doc/documentation.md holds the reverse-engineering notes.
+# Re-create the data with the commands in vendor/README.md, and use `git add -f` only if
+# a specific artifact must be tracked as evidence.
+vendor/*
+!vendor/README.md
+
+# Transient run logs / captures (regenerate with --capture)
+output.txt
+*.captured
+read.log
+
+# ...except the committed reference capture used by `decode` and the docs
+!testdata/*.captured

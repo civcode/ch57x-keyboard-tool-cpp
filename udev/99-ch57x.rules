@@ -1,0 +1,7 @@
+# Grant non-root access to the CH57x mini-keyboard (514c:*) for the vendor
+# programming interface. Install with:
+#   sudo cp udev/99-ch57x.rules /etc/udev/rules.d/   # from the repo root
+#   sudo usermod -aG plugdev $USER
+#   sudo udevadm control --reload-rules     # then unplug + replug the keyboard
+# and re-login so the plugdev group takes effect.
+SUBSYSTEM=="usb", ATTR{idVendor}=="514c", MODE="0660", GROUP="plugdev", TAG+="uaccess"
