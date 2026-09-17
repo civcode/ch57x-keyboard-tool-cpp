@@ -108,10 +108,10 @@ LICENSE                       MIT (upstream notice retained for the ported code)
 
 ## Known limitations
 
-- `read` currently loses the last 11 of 72 stored records: the firmware stops answering
-  `0xFA` requests mid-stream (reproducible from the bundled capture). The tool reports
-  the truncation instead of hanging. See
-  [open problems](doc/documentation.md#open-problems).
+- `read` returns all **72** stored records (24 slots × 3 layers). The bundled capture in
+  [`testdata/`](testdata) is *partial* — 37 records, 4th request unanswered — so `decode`
+  on it prints 37 and flags the gap; that is the fixture, not the board. An interrupted
+  read keeps the records that arrived and says so instead of hanging.
 - LED settings are CLI-only — `config.yaml` has no `led:` section, so `upload` does not
   touch lighting.
 - `ch57x-2` / `ch57x-3` models are recognised but their drivers are not ported.

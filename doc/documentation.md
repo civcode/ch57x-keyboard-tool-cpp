@@ -195,8 +195,8 @@ Measured on this board with `--capture` (`status = 0x00`, "legacy" firmware):
   read-back records and `upload`'s own output decode identically.
 - Records arrive in storage order, not key order (ids jump, layers interleave); the
   tool keeps stream order because a `delay` record belongs to the record before it.
-- This firmware stores **24 slots × 3 layers** = 72 binding records (confirmed by a
-  complete read). Slots 1–3 are the physical keys; slots 4–15 (beyond the grid) and
+- This firmware stores **24 slots × 3 layers** = 72 binding records — a live `read`
+  returns all 72. Slots 1–3 are the physical keys; slots 4–15 (beyond the grid) and
   16–24 (knob range) hold a factory default image (`a`..`r`, digits `1`..`9`) and are
   labelled `slot N` rather than pretending to be physical keys.
 - Layer byte: `1`-based on the wire (`bindKey` rejects index > 15, so 16 layers max);
@@ -224,7 +224,9 @@ records per request, and prints the same table `read` prints. Capture once with 
 device, then iterate on the parser with no device and no root.
 
 Reference fixture: [`testdata/board-514c-8851.captured`](../testdata/board-514c-8851.captured)
-(truncated after 37 records — see [open problems](#open-problems)).
+is a **partial** capture — 4 requests, 37 records, the 4th unanswered — recorded during an
+early read attempt. `decode` on it prints 37 records and flags the gap; a live `read` on
+the board returns all 72. It is kept because the partial case is worth testing against.
 
 ## Config semantics
 
@@ -259,6 +261,11 @@ Reference fixture: [`testdata/board-514c-8851.captured`](../testdata/board-514c-
   raw hardware records carrying the `0xfa` read opcode, capture round-trip, LED codes,
   orientation/render, and the first-key-only limited-layout rule.
 - `show-keys`, `validate`, `dump`, `decode` need no device and no root.
+- **Retracted:** an earlier revision of these docs claimed `read` lost the tail of the map
+  because the firmware stopped answering `0xFA` mid-stream. That came from the single
+  truncated capture above, not from the device — a live `read` returns all 72 records. The
+  defensive handling stays (bounded `deadlineMs`, records kept when a send fails, a
+  truncation note instead of a silent short map).
 
 ## Vendor tool reverse engineering
 
@@ -301,21 +308,14 @@ Ghidra RE of `widget.o` (the protocol core, ~200 defined symbols) shows the prot
 
 ## Open problems
 
-1. **Read truncation (reproducible from the fixture).** After 37 records (layer 1
-   complete, layer 2 through slot 13) the device stops taking requests: the 4th
-   `03 fa 0f 03 04` OUT report times out (`send failed: Operation timed out`) and is
-   never answered, so 11 records never arrive. The tool now catches the send failure,
-   keeps the records already read, is bounded by `deadlineMs` (default 5 s) and reports
-   truncation instead of looking hung — but the firmware behaviour is unexplained.
-   Ideas: pace requests with a delay, or address layer 2 with different group numbering.
-2. **Layer toggle on this 3-key board.** The stored map has L1–L3; the vendor UI exposes
+1. **Layer toggle on this 3-key board.** The stored map has L1–L3; the vendor UI exposes
    one layer — the others are probably FN-based.
-3. **LED round-trip on hardware.** `setLed` encoding is byte-identical to the Rust
+2. **LED round-trip on hardware.** `setLed` encoding is byte-identical to the Rust
    reference and covered by selftest, but a `led` write followed by `read` has not been
    confirmed on the board.
-4. **Newer firmware path** (`identify` status `0x0a` → `03 fa 19 00 <n>`) is implemented
+3. **Newer firmware path** (`identify` status `0x0a` → `03 fa 19 00 <n>`) is implemented
    but untested against hardware.
-5. **Second unit / other PIDs** (`ch57x-2`, `ch57x-3`) — drivers not ported.
+4. **Second unit / other PIDs** (`ch57x-2`, `ch57x-3`) — drivers not ported.
 
 ## Environment limitations during development
 

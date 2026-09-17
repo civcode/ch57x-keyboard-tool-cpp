@@ -330,8 +330,8 @@ ReadConfigResult readVariant(Device& dev, bool newProtocol, size_t firstTimeoutM
                 dev.send(readRequest(newProtocol, request));
                 ++res.requests;
             } catch (const UsbError& e) {
-                // A board can stop servicing its OUT endpoint once it has dumped the
-                // map. Keep the records already read instead of losing the whole read.
+                // Defensive: an interrupted read must not throw the map away. Keep the
+                // records that arrived and let the caller report the short read.
                 res.error = e.what();
                 res.truncated = true;
                 return res;

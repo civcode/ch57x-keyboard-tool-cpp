@@ -136,9 +136,11 @@ Notes on the output:
 - Slots `04`–`15` are beyond this board's 1×3 grid, `16`–`24` are the knob range; both
   hold a factory default image (`a`..`r`, digits `1`..`9`) and are labelled `slot N`.
 - `--verbose` prints every record as hex.
-- If output ends with `… 11 record(s) never arrived (device stopped answering) …` plus a
-  `TRUNCATED` line, that is firmware misbehaviour, not a parse failure:
-  [open problems](documentation.md#open-problems).
+- A complete `read` ends with `72 binding record(s) decoded`. Fewer means the read was
+  interrupted — the tool prints `I/O error after N request(s)` or a note that the device
+  stopped sending records, keeps what arrived, and never hangs; replug and retry.
+- The bundled fixture is deliberately **partial**: `decode testdata/board-514c-8851.captured`
+  prints 37 records and marks the 4th request unanswered. The board itself returns all 72.
 
 ## Watch the keys you press
 
