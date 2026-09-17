@@ -239,7 +239,7 @@ Device Device::open(const UsbOptions& opts, std::optional<KeyboardModel> model) 
     int rcl = libusb_claim_interface(handle, foundIface);
     if (rcl != 0) {
         libusb_close(handle);
-        throw UsbError(std::string("failed to claim interface (needs udev rule/root): ") +
+        throw UsbError(std::string("failed to claim interface (run with sudo; optional udev rule): ") +
                        libusb_strerror(rcl));
     }
 

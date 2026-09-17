@@ -20,6 +20,7 @@ model only**. The host, agent, extension and MCP setup behind that workflow is d
 | **Works** | `upload` `read` `watch` `led` — all verified on hardware |
 | **Interface** | libusb on the vendor HID channel (`/dev/hidraw`), no kernel driver changes |
 | **Deps** | libusb-1.0, CMake — no Boost, no Rust toolchain |
+| **Permissions** | `sudo` for `read` `upload` `led` `watch` (recommended); the udev rule is optional |
 | **Reference** | byte-for-byte compatible with [`kriomant/ch57x-keyboard-tool`](https://github.com/kriomant/ch57x-keyboard-tool) (MIT), whose `k884x` driver this ports |
 | **Also documented** | the vendor Windows GUI (`MINI_KEYBOARD.exe`) + its Qt build tree served as the RE cross-check — binaries are not committed, [`vendor/README.md`](vendor/README.md) gives the download URL and checksums, findings are in `doc/documentation.md` |
 
@@ -30,12 +31,8 @@ model only**. The host, agent, extension and MCP setup behind that workflow is d
 sudo apt install -y libusb-1.0-0-dev cmake g++ make
 cmake -S . -B build && cmake --build build -j
 
-# allow non-root device access (or use sudo below)
-sudo cp udev/99-ch57x.rules /etc/udev/rules.d/
-sudo udevadm control --reload-rules && sudo udevadm trigger
-
 # what is bound right now?
-./build/ch57x-keyboard-tool read
+sudo ./build/ch57x-keyboard-tool read
 
 # rebind the three keys to media transport controls
 cat > config.yaml <<'YAML'
@@ -48,10 +45,19 @@ layers:
       - [previous, play, next]
 YAML
 
-./build/ch57x-keyboard-tool validate config.yaml   # offline sanity check
+./build/ch57x-keyboard-tool validate config.yaml   # offline sanity check, no device
 sudo ./build/ch57x-keyboard-tool upload config.yaml
-./build/ch57x-keyboard-tool watch config.yaml      # confirm each press
+sudo ./build/ch57x-keyboard-tool watch config.yaml # confirm each press
 ```
+
+**Permissions: just use `sudo`.** The four commands that touch the board — `read`,
+`upload`, `led`, `watch` — need write access to the HID channel, and `sudo` is the
+recommended way to get it. `validate`, `dump`, `show-keys` and `decode` never open the
+device, so they run unprivileged. Installing
+[`udev/99-ch57x.rules`](udev/99-ch57x.rules) is **optional**, not required and not the
+default advice — it only buys you sudo-free runs if you rebind the board often enough to
+be worth editing `/etc/udev/rules.d` and re-logging in. Instructions are in
+[`doc/examples.md`](doc/examples.md).
 
 Everything is written to the keyboard's own flash — the OS never sees a driver, so the
 mapping follows the board to any machine.
@@ -94,7 +100,7 @@ src/*.cpp                     implementation + main.cpp CLI + selftest.cpp
 testdata/                     reference wire capture used by `decode`
 config.yaml                   example mapping (previous / play / next)
 expected_dump.txt             golden `dump config.yaml` output (ctest: dump-golden)
-udev/99-ch57x.rules           udev rules for non-root access
+udev/99-ch57x.rules           optional udev rule (skip it and just use sudo)
 vendor/README.md              how to re-download the vendor Windows tool + its inventory
                               (the 102 MB of vendor binaries are not committed)
 LICENSE                       MIT (upstream notice retained for the ported code)

@@ -1,14 +1,10 @@
 # CLI examples — `ch57x-keyboard-tool`
 
 All commands run from the repo root after
-[building](../README.md#quick-start). Device access needs permission on `/dev/hidraw*` —
-either `sudo`, or install [`udev/99-ch57x.rules`](../udev/99-ch57x.rules) once:
-
-```bash
-sudo cp udev/99-ch57x.rules /etc/udev/rules.d/
-sudo udevadm control --reload-rules && sudo udevadm trigger
-./build/ch57x-keyboard-tool read          # now works without sudo
-```
+[building](../README.md#quick-start). The commands that touch the board (`read`, `upload`,
+`led`, `watch`) are written with `sudo` below — that is the recommended way to run them.
+A udev rule can drop the `sudo`, but installing one is **optional and not required**; see
+[Running without sudo](#running-without-sudo-optional) at the end.
 
 Global options (before the command): `--model <ch57x-1|2|3>`, `--vid <hex>` /
 `--pid <hex>`, `--address <bus> <devno>` (disambiguate several boards),
@@ -27,6 +23,7 @@ The config path defaults to `./config.yaml`; `-h/--help` prints the same list.
 - [Text, mouse, macros](#text-mouse-macros)
 - [Multiple layers](#multiple-layers)
 - [Dry run and validation](#dry-run-and-validation)
+- [Running without sudo (optional)](#running-without-sudo-optional)
 
 ## Media buttons
 
@@ -236,3 +233,21 @@ Regenerate the golden file after intentionally changing `config.yaml`:
 ```bash
 ./build/ch57x-keyboard-tool dump config.yaml > expected_dump.txt
 ```
+
+## Running without sudo (optional)
+
+Not needed to use the tool — `sudo` is the recommended path, and this detour only pays off
+if you rebind the board often enough to be bothered by it. It writes a system rules file,
+adds you to `plugdev`, and needs a replug plus a re-login to take effect:
+
+```bash
+sudo cp udev/99-ch57x.rules /etc/udev/rules.d/
+sudo usermod -aG plugdev $USER
+sudo udevadm control --reload-rules && sudo udevadm trigger   # then unplug + replug
+
+./build/ch57x-keyboard-tool read          # now works without sudo
+```
+
+The rule ([`udev/99-ch57x.rules`](../udev/99-ch57x.rules)) matches every `514c:*` device —
+the whole rebadged CH57x keypad family, not just `514c:8851` — so it is deliberately an
+opt-in rather than a setup step.

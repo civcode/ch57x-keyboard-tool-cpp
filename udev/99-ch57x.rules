@@ -1,5 +1,9 @@
-# Grant non-root access to the CH57x mini-keyboard (514c:*) for the vendor
-# programming interface. Install with:
+# OPTIONAL -- you do not need this to use the tool, just run it with sudo.
+#
+# Granting non-root access to the CH57x mini-keyboard (514c:* -- the whole rebadged
+# family, not only 514c:8851) for the vendor programming interface. Only worth
+# installing if you rebind often enough to be bothered by sudo: it changes system
+# state and needs a replug + re-login. Install with:
 #   sudo cp udev/99-ch57x.rules /etc/udev/rules.d/   # from the repo root
 #   sudo usermod -aG plugdev $USER
 #   sudo udevadm control --reload-rules     # then unplug + replug the keyboard

@@ -93,8 +93,10 @@ ctest --test-dir build                            # selftest + dump-golden
 
 USB I/O has to happen on the host: the sandboxed agent shell has no `/dev/bus/usb`,
 `/dev/hidraw*` or `/dev/usbmon*`, so `upload` / `read` / `led` / `watch` and any live
-capture were run directly on the host (root, or with
-[`udev/99-ch57x.rules`](../udev/99-ch57x.rules) installed). Everything offline —
+capture were run directly on the host under `sudo` — the documented, recommended path.
+The [`udev/99-ch57x.rules`](../udev/99-ch57x.rules) shipped here are optional: installing
+one is a system change (rules file + `plugdev` + replug + re-login) that is not worth it
+just to run the tool. Everything offline —
 parser, encoder, `validate`, `dump`, `decode`, selftests — runs anywhere, no device.
 
 ## Agent: pi coding agent

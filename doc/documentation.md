@@ -321,8 +321,8 @@ Ghidra RE of `widget.o` (the protocol core, ~200 defined symbols) shows the prot
 
 The dev sandbox has no `/dev/bus/usb`, no `/dev/hidraw*`, no `dmesg` and no
 `/dev/usbmon`, so live packet capture and control transfers cannot run there;
-`read`/`upload`/`led` must be exercised on the host (`sudo`, or install
-[`udev/99-ch57x.rules`](../udev/99-ch57x.rules)). Everything else came from `lsusb -v`,
+`read`/`upload`/`led` must be exercised on the host, normally under `sudo` (the
+optional [`udev/99-ch57x.rules`](../udev/99-ch57x.rules) can drop that requirement). Everything else came from `lsusb -v`,
 sysfs (`/sys/bus/usb`, `/sys/bus/hid/*/report_descriptor`),
 `/proc/bus/input/devices`, the fixture captures, and the upstream tools/docs.
 
