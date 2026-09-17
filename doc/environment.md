@@ -11,11 +11,21 @@ reproducible. Nothing here is required to *build* the tool — see
 | Board / BIOS | ASUS PRIME X870-P WIFI (ASUSTeK), BIOS 0831 |
 | CPU | AMD Ryzen 9 9950X, 16 cores / 32 threads |
 | RAM | 64 GiB (60.4 GiB visible) |
+| GPU | **ASUS GeForce RTX 4070 Ti SUPER** — NVIDIA AD103, PCI `01:00.0`, 16 GiB GDDR6X (256-bit, 672 GB/s), NVIDIA kernel module 580.173.02 — does the local model inference |
+| iGPU | AMD/ATI `13c0` (Ryzen 9 9950X), `amdgpu`, drives the monitors (`card1`); the RTX 4070 Ti SUPER is headless (`card2`) |
 | OS | Ubuntu 24.04.5 LTS (Noble Numbat), kernel `7.0.0-31-generic`, x86_64 |
 | Shell / session | bash under tmux; work tree `/home/chris/tmp/wired-mini-keyboard` (also `$HOME`) |
 
-No GPU was used for anything in this repo — the keyboard work is USB + byte-level
-protocol code, and the language model ran on a local server outside this shell.
+The GPU is in the inference path only — building and testing the tool is pure CPU work
+(`nproc`-scale g++ + a handful of libusb transfers). The quant sizes and context lengths
+configured for the agent are chosen to fit the 16 GiB of VRAM.
+
+Memory spec per [NVIDIA's RTX 4070 family datasheet](https://www.nvidia.com/en-us/geforce/graphics-cards/40-series/rtx-4070-family/);
+the PCI identity, driver binding and NVRM version were read from `lspci`,
+`/sys/bus/pci/devices/0000:01:00.0/driver` and `/proc/driver/nvidia/version`.
+`nvidia-smi` reports "couldn't communicate with the NVIDIA driver" from inside the
+sandboxed agent shell — the `/dev/nvidia*` nodes are not exposed there, which is a
+sandbox artefact, not a missing or unloaded driver.
 
 ## Build toolchain
 
@@ -47,7 +57,7 @@ parser, encoder, `validate`, `dump`, `decode`, selftests — runs anywhere, no d
 | | |
 |---|---|
 | Pi | 0.85.1 (`@earendil-works/pi-coding-agent`) |
-| Provider | `local-llama` — OpenAI-compatible endpoint `http://127.0.0.1:8080/v1` (not reachable from inside the sandbox network view) |
+| Provider | `local-llama` — OpenAI-compatible endpoint `http://127.0.0.1:8080/v1`, served from the RTX 4070 Ti SUPER on this host (the agent's shell reaches only the sandbox proxies, so `curl` from a sandboxed command cannot hit `:8080` directly) |
 | Model | `qwen3.8-flash-next-q3_k_xl-128k`, 128k context, thinking level `medium` |
 | Alternates configured | Qwen3-Coder-30B (32k/128k), Qwen3.8-27B quants (32k–256k), Granite-4.2-8B, Gemma-4-26B |
 | Sessions | JSONL transcripts under `~/.pi/agent/sessions/--home-chris-tmp-wired-mini-keyboard--/` |
