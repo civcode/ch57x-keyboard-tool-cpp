@@ -9,11 +9,9 @@ WCH **CH57x** RISC-V inside).
 
 This started from a cheap mini keyboard off AliExpress: three buttons, programmable, and
 the only way to configure it is the vendor's Windows GUI. That is not a great fit for a
-Linux desktop, and it is a poor interface even on Windows — no versioning, no diffing, no
-scripting. So this is an experiment in reverse-engineering the protocol and shipping a
-plain Linux **C++17 command-line tool** for it, done with a coding agent and a **local
-model only** — no cloud assistant, no vendor source, no official spec. The host, agent,
-extension and MCP setup behind that workflow is described in
+Linux desktop. So this is an experiment in reverse-engineering the protocol and shipping a
+plain Linux **C++17 command-line tool** for it, done with pi coding agent and a **local
+model only**. The host, agent, extension and MCP setup behind that workflow is described in
 [`doc/environment.md`](doc/environment.md); the protocol findings are in
 [`doc/documentation.md`](doc/documentation.md).
 
