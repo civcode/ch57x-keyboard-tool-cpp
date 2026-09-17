@@ -325,3 +325,6 @@ The dev sandbox has no `/dev/bus/usb`, no `/dev/hidraw*`, no `dmesg` and no
 [`udev/99-ch57x.rules`](../udev/99-ch57x.rules)). Everything else came from `lsusb -v`,
 sysfs (`/sys/bus/usb`, `/sys/bus/hid/*/report_descriptor`),
 `/proc/bus/input/devices`, the fixture captures, and the upstream tools/docs.
+
+Host hardware, toolchain versions and the agent / MCP tooling used here are recorded in
+[environment.md](environment.md).

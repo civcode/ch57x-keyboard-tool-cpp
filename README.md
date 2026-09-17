@@ -5,6 +5,18 @@ keys, lights the LEDs, reads the stored map back, and watches presses live on th
 3-key USB macro keypad (sold as a "Kuxuan / SIFESION 1051 PRO", Hangkai branded,
 WCH **CH57x** RISC-V inside).
 
+## Why
+
+This started from a cheap mini keyboard off AliExpress: three buttons, programmable, and
+the only way to configure it is the vendor's Windows GUI. That is not a great fit for a
+Linux desktop, and it is a poor interface even on Windows — no versioning, no diffing, no
+scripting. So this is an experiment in reverse-engineering the protocol and shipping a
+plain Linux **C++17 command-line tool** for it, done with a coding agent and a **local
+model only** — no cloud assistant, no vendor source, no official spec. The host, agent,
+extension and MCP setup behind that workflow is described in
+[`doc/environment.md`](doc/environment.md); the protocol findings are in
+[`doc/documentation.md`](doc/documentation.md).
+
 | | |
 |---|---|
 | **Works** | `upload` `read` `watch` `led` — all verified on hardware |
@@ -52,6 +64,7 @@ mapping follows the board to any machine.
 |---|---|
 | [`doc/documentation.md`](doc/documentation.md) | **Technical reference** — USB topology, vendor protocol (`0xFB` identify, `0xFA` read-back, `0xFE` bind/LED, `0xAA`/`0xFD` commit), record and key-id layouts, LED encoding, capture format, vendor-tool RE, firmware variants, open problems |
 | [`doc/examples.md`](doc/examples.md) | **CLI how-to** — media buttons, LEDs, text/mouse/macros, multi-layer configs, watch, capture + offline decode, permissions, dry runs |
+| [`doc/environment.md`](doc/environment.md) | **How this was built** — host hardware, toolchain versions, pi coding agent + local model, extensions, Ghidra / clangd MCP servers |
 | [`include/ch57x/`](include/ch57x/) + [`src/`](src/) | the port itself — each header is annotated with the upstream Rust file/routine it mirrors (`config.rs`, `k884x.rs`, `usb.rs`, `main.rs`) and records deliberate deviations |
 
 ## Verification
@@ -76,6 +89,7 @@ in `testdata/`, out-of-tree build in `build/`.
 README.md                     this file
 doc/documentation.md          protocol / hardware reference
 doc/examples.md               CLI usage examples
+doc/environment.md            dev machine + agent/MCP setup used to build this
 CMakeLists.txt                build + selftest wiring (needs only libusb-1.0)
 include/ch57x/*.h             library headers (codes, parser, config, keyboard, usb, capture)
 src/*.cpp                     implementation + main.cpp CLI + selftest.cpp
